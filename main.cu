@@ -6,6 +6,9 @@
 #include "modules/glob_funct.hpp"
 #include "modules/glob_type.hpp"
 #include "modules/gpu.cuh"
+#include "utils/constants.hpp"
+#include "utils/gpu_operations.hpp"
+#include "utils/timing.hpp"
 
 #include <algorithm>
 #include <cstdio>
@@ -20,6 +23,7 @@
 #include <sys/stat.h>
 #include <unordered_map>
 #include <vector>
+
 namespace fs = std::filesystem;
 
 #define ENOUGH ((CHAR_BIT * sizeof(int) - 1) / 3 + 3)
@@ -326,10 +330,10 @@ int main(int argc, char **argv) {
     cvar = (double *)malloc(18 * sample_limit * sizeof(double));
     conc = (double *)malloc(sample_limit * sizeof(double));
 
-    int num_of_constants = 146;
-    int num_of_states = 42;
-    int num_of_algebraic = 199;
-    int num_of_rates = 42;
+    int Tomek_num_of_constants = 146;
+    int Tomek_num_of_states = 42;
+    int Tomek_num_of_algebraic = 199;
+    int Tomek_num_of_rates = 42;
 
     //const double CONC = p_param->conc;
 
@@ -340,7 +344,7 @@ int main(int argc, char **argv) {
 
         const unsigned int datapoint_size = p_param->sampling_limit;
         double *cache;
-        cache = (double *)malloc((num_of_states + 2) * sample_limit * sizeof(double));
+        cache = (double *)malloc((Tomek_num_of_states + 2) * sample_limit * sizeof(double));
 
         double *d_ic50;
         double *d_conc;
@@ -369,20 +373,6 @@ int main(int argc, char **argv) {
         double *tension;
         cipa_t *temp_result, *cipa_result;
 
-        static const int CALCIUM_SCALING = 1000000;
-        static const int CURRENT_SCALING = 1000;
-
-        int num_of_constants = 146;
-        int num_of_states = 42;
-        int num_of_algebraic = 199;
-        int num_of_rates = 42;
-
-        // snprintf(buffer, sizeof(buffer),
-        //   "./drugs/bepridil/IC50_samples.csv"
-        //   // "./drugs/bepridil/IC50_optimal.csv"
-        //   // "./IC50_samples.csv"
-        //   );
-
         int sample_size = get_IC50_data_from_file(p_param->hill_file, ic50, conc, drug_name);
         if (sample_size == 0)
             printf("Something problem with the IC50 file!\n");
@@ -410,18 +400,18 @@ int main(int argc, char **argv) {
         // note to self:
         // num of states+2 gave you at the very end of the file (pace number)
         // the very beginning -> the core number
-        //   for (int z = 0; z <  num_of_states; z++) {printf("%lf\n", cache[z+1]);}
+        //   for (int z = 0; z <  Tomek_num_of_states; z++) {printf("%lf\n", cache[z+1]);}
         //   printf("\n");
-        //   for (int z = 0; z <  num_of_states; z++) {printf("%lf\n", cache[ 1*(num_of_states+2) + (z+2)]);}
+        //   for (int z = 0; z <  Tomek_num_of_states; z++) {printf("%lf\n", cache[ 1*(Tomek_num_of_states+2) + (z+2)]);}
         //   printf("\n");
-        //   for (int z = 0; z <  num_of_states; z++) {printf("%lf\n", cache[ 2*(num_of_states+2) + (z+3)]);}
+        //   for (int z = 0; z <  Tomek_num_of_states; z++) {printf("%lf\n", cache[ 2*(Tomek_num_of_states+2) + (z+3)]);}
         // return 0 ;
 
-        cudaMalloc(&d_ALGEBRAIC, num_of_algebraic * sample_size * sizeof(double));
-        cudaMalloc(&d_CONSTANTS, num_of_constants * sample_size * sizeof(double));
-        cudaMalloc(&d_RATES, num_of_rates * sample_size * sizeof(double));
-        cudaMalloc(&d_STATES, num_of_states * sample_size * sizeof(double));
-        cudaMalloc(&d_STATES_cache, (num_of_states + 2) * sample_size * sizeof(double));
+        cudaMalloc(&d_ALGEBRAIC, Tomek_num_of_algebraic * sample_size * sizeof(double));
+        cudaMalloc(&d_CONSTANTS, Tomek_num_of_constants * sample_size * sizeof(double));
+        cudaMalloc(&d_RATES, Tomek_num_of_rates * sample_size * sizeof(double));
+        cudaMalloc(&d_STATES, Tomek_num_of_states * sample_size * sizeof(double));
+        cudaMalloc(&d_STATES_cache, (Tomek_num_of_states + 2) * sample_size * sizeof(double));
         cudaMalloc(&d_mec_ALGEBRAIC, 24 * sample_size * sizeof(double));
         cudaMalloc(&d_mec_CONSTANTS, 29 * sample_size * sizeof(double));
         cudaMalloc(&d_mec_RATES, 7 * sample_size * sizeof(double));
@@ -445,14 +435,14 @@ int main(int argc, char **argv) {
         cudaMalloc(&iks, sample_size * datapoint_size * sizeof(double));
         cudaMalloc(&ik1, sample_size * datapoint_size * sizeof(double));
         cudaMalloc(&tension, sample_size * datapoint_size * sizeof(double));
-        // cudaMalloc(&d_STATES_RESULT, (num_of_states+1) * sample_size * sizeof(double));
-        // cudaMalloc(&d_all_states, num_of_states * sample_size * p_param->find_steepest_start * sizeof(double));
+        // cudaMalloc(&d_STATES_RESULT, (Tomek_num_of_states+1) * sample_size * sizeof(double));
+        // cudaMalloc(&d_all_states, Tomek_num_of_states * sample_size * p_param->find_steepest_start * sizeof(double));
 
         printf("Copying sample files to GPU memory space \n");
         cudaMalloc(&d_ic50, sample_size * 14 * sizeof(double));
         cudaMalloc(&d_cvar, sample_size * 18 * sizeof(double));
         cudaMalloc(&d_conc, sample_size * sizeof(double));
-        cudaMemcpy(d_STATES_cache, cache, (num_of_states + 2) * sample_size * sizeof(double), cudaMemcpyHostToDevice);
+        cudaMemcpy(d_STATES_cache, cache, (Tomek_num_of_states + 2) * sample_size * sizeof(double), cudaMemcpyHostToDevice);
         cudaMemcpy(d_ic50, ic50, sample_size * 14 * sizeof(double), cudaMemcpyHostToDevice);
         cudaMemcpy(d_cvar, cvar, sample_size * 18 * sizeof(double), cudaMemcpyHostToDevice);
         cudaMemcpy(d_conc, conc, sample_size * sizeof(double), cudaMemcpyHostToDevice);
@@ -682,13 +672,13 @@ int main(int argc, char **argv) {
                     // temp_result[sample_id].dvmdt_repol = -999;
                     // temp_result[sample_id].dvmdt_max = -999;
                     // temp_result[sample_id].vm_peak = -999;
-                    // temp_result[sample_id].vm_valley = d_STATES[(sample_id * num_of_states) +V];
+                    // temp_result[sample_id].vm_valley = d_STATES[(sample_id * Tomek_num_of_states) +V];
                     // temp_result[sample_id].vm_dia = -999;
 
                     // temp_result[sample_id].apd90 = 0.;
                     // temp_result[sample_id].apd50 = 0.;
                     // temp_result[sample_id].ca_peak = -999;
-                    // temp_result[sample_id].ca_valley = d_STATES[(sample_id * num_of_states) +cai];
+                    // temp_result[sample_id].ca_valley = d_STATES[(sample_id * Tomek_num_of_states) +cai];
                     // temp_result[sample_id].ca_dia = -999;
                     // temp_result[sample_id].cad90 = 0.;
                     // temp_result[sample_id].cad50 = 0.;
