@@ -2,7 +2,6 @@
 #include <cuda_runtime.h>
 
 // #include "modules/drug_sim.hpp"
-#include "modules/cipa_t.cuh"
 #include "modules/glob_funct.hpp"
 #include "modules/glob_type.hpp"
 #include "modules/gpu.cuh"
@@ -25,56 +24,9 @@
 #include <vector>
 
 namespace fs = std::filesystem;
-
-#define ENOUGH ((CHAR_BIT * sizeof(int) - 1) / 3 + 3)
 char buffer[255];
 
-// unsigned int datapoint_size = 7000;
-const unsigned int sample_limit = 10000;
-
 clock_t START_TIMER;
-
-clock_t tic();
-void toc(clock_t start = START_TIMER);
-
-clock_t tic() {
-    return START_TIMER = clock();
-}
-
-void toc(clock_t start) {
-    std::cout
-        << "Elapsed time: "
-        << (clock() - start) / (double)CLOCKS_PER_SEC << "s"
-        << std::endl;
-}
-
-int gpu_check(unsigned int datasize) {
-    int num_gpus;
-    float percent;
-    int id;
-    size_t free, total;
-    cudaGetDeviceCount(&num_gpus);
-    for (int gpu_id = 0; gpu_id < num_gpus; gpu_id++) {
-        cudaSetDevice(gpu_id);
-        cudaGetDevice(&id);
-        cudaMemGetInfo(&free, &total);
-        percent = (free / (float)total);
-        printf("GPU No %d\nFree Memory: %ld, Total Memory: %ld (%f percent free)\n", id, free, total, percent * 100.0);
-    }
-    percent = 1.0 - (datasize / (float)total);
-    //// this code strangely gave out too small value, so i disable the safety switch for now
-
-    // printf("The program uses GPU No %d and %f percent of its memory\n", id,percent*100.0);
-    // printf("\n");
-    // if (datasize<=free) {
-    //   return 0;
-    // }
-    // else {
-    //   return 1;
-    // }
-
-    return 0;
-}
 
 // get the IC50 data from file
 drug_t get_IC50_data_from_file(const char *file_name);
