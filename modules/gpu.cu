@@ -4,7 +4,7 @@
 #include <stdio.h>
 
 #include "../cellmodels/Land_2016.hpp"
-#include "../cellmodels/Ohara_Rudy_2011.hpp"
+#include "../cellmodels/Tomek_model.hpp"
 #include "glob_funct.hpp"
 #include "glob_type.hpp"
 #include "gpu.cuh"

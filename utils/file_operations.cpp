@@ -156,42 +156,42 @@ char *get_drug_name(const char filename[1024]) {
  * @param sample_size Number of samples in the simulation.
  * @param ORd_num_of_states Number of state variables in the simulation.
  */
-void write_results_to_file(const char *base_dir, const char *drug_name, double *h_states, cipa_t *h_cipa_result, int sample_size, int ORd_num_of_states) {
-    printf("writing to file... \n");
+// void write_results_to_file(const char *base_dir, const char *drug_name, double *h_states, cipa_t *h_cipa_result, int sample_size, int ORd_num_of_states) {
+//     printf("writing to file... \n");
 
-    std::string base_path = std::string(base_dir) + "/init_" + drug_name + "/";
+//     std::string base_path = std::string(base_dir) + "/init_" + drug_name + "/";
 
-    if (mkdir(base_path.c_str(), 0777) == 0) {
-        printf("Directory created\n");
-    } else {
-        printf("Unable to create directory\n");
-    }
+//     if (mkdir(base_path.c_str(), 0777) == 0) {
+//         printf("Directory created\n");
+//     } else {
+//         printf("Unable to create directory\n");
+//     }
 
-    std::string state_file = base_path + "state_only.csv";
+//     std::string state_file = base_path + "state_only.csv";
 
-    FILE *writer = fopen(state_file.c_str(), "w");
-    if (writer == nullptr) {
-        printf("Unable to open file for writing: %s\n", state_file.c_str());
-        return;
-    }
-    fprintf(writer, "V,CaMKt,cass,nai,nass,ki,kss,cansr,cajsr,cai,m,hf,hs,j,hsp,jp,mL,hL,hLp,a,iF,iS,ap,iFp,iSp,d,ff,fs,fcaf,fcas,jca,ffp,fcafp,nca,xrf,xrs,xs1,xs2,xk1,Jrelnp,Jrelp,\n");
-    for (int sample_id = 0; sample_id < sample_size; sample_id++) {
-        for (int datapoint = 0; datapoint < ORd_num_of_states - 1; datapoint++) {
-            fprintf(writer, "%lf,", h_states[(sample_id * ORd_num_of_states) + datapoint]);
-        }
-        fprintf(writer, "%lf\n", h_states[(sample_id * ORd_num_of_states) + ORd_num_of_states - 1]);
-    }
-    fclose(writer);
+//     FILE *writer = fopen(state_file.c_str(), "w");
+//     if (writer == nullptr) {
+//         printf("Unable to open file for writing: %s\n", state_file.c_str());
+//         return;
+//     }
+//     fprintf(writer, "V,CaMKt,cass,nai,nass,ki,kss,cansr,cajsr,cai,m,hf,hs,j,hsp,jp,mL,hL,hLp,a,iF,iS,ap,iFp,iSp,d,ff,fs,fcaf,fcas,jca,ffp,fcafp,nca,xrf,xrs,xs1,xs2,xk1,Jrelnp,Jrelp,\n");
+//     for (int sample_id = 0; sample_id < sample_size; sample_id++) {
+//         for (int datapoint = 0; datapoint < ORd_num_of_states - 1; datapoint++) {
+//             fprintf(writer, "%lf,", h_states[(sample_id * ORd_num_of_states) + datapoint]);
+//         }
+//         fprintf(writer, "%lf\n", h_states[(sample_id * ORd_num_of_states) + ORd_num_of_states - 1]);
+//     }
+//     fclose(writer);
 
-    std::string dvmdt_file = base_path + "dvmdt.csv";
-    writer = fopen(dvmdt_file.c_str(), "w");
-    if (writer == nullptr) {
-        printf("Unable to open file for writing: %s\n", dvmdt_file.c_str());
-        return;
-    }
-    fprintf(writer, "Sample,dVm/dt\n");
-    for (int sample_id = 0; sample_id < sample_size; sample_id++) {
-        fprintf(writer, "%d,%lf\n", sample_id, h_cipa_result[sample_id].dvmdt_repol);
-    }
-    fclose(writer);
-}
+//     std::string dvmdt_file = base_path + "dvmdt.csv";
+//     writer = fopen(dvmdt_file.c_str(), "w");
+//     if (writer == nullptr) {
+//         printf("Unable to open file for writing: %s\n", dvmdt_file.c_str());
+//         return;
+//     }
+//     fprintf(writer, "Sample,dVm/dt\n");
+//     for (int sample_id = 0; sample_id < sample_size; sample_id++) {
+//         fprintf(writer, "%d,%lf\n", sample_id, h_cipa_result[sample_id].dvmdt_repol);
+//     }
+//     fclose(writer);
+// }
